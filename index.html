@@ -1,5 +1,4 @@
 <html>
-
 <head>
     <title>Population by SA2 in 2022</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0/leaflet.css" />
@@ -16,7 +15,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"
         integrity="sha512-zInFF17qBFVvvvFpIfeBzo7Tj7+rQxLeTJDmbxjBz5/zIr89YVbTNelNhdTT+/DCrxoVzBeUPVFJsczKbB7sew=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
     <style>
         html,
         body,
@@ -24,9 +22,6 @@
             height: 100%;
             margin: 0;
         }
-
-      
-
         #title {
             position: absolute;
             top: 30px;
@@ -45,19 +40,16 @@
             font-weight: normal;
             font-size: 1rem;
         }
-
         .legend h1 {
             font-size: 1rem;
             font-weight: bold;
             margin-top: 0;
         }
-
         .legend {
             background-color: rgba(0,0,0,0.8);
             color: white;
             padding: 20px;
         }
-
         .legend i {
             width: 18px;
             height: 18px;
@@ -79,7 +71,6 @@
         }
     </style>
 </head>
-
 <body>
     <h1 id="title">Population by SA2 in 2022</h1>
     <div id="map"></div>
@@ -89,7 +80,6 @@
             center: [-41, 172]
         });
         L.tileLayer.provider('OpenStreetMap.Mapnik').addTo(map);
-
         // Load and process CSV data
         Papa.parse("https://raw.githubusercontent.com/UoA-eResearch/SA2_2022_population/main/population_by_SA2.csv", {
             download: true,
@@ -114,13 +104,16 @@
                                     population_lookup[row.Area.split(" ")[0]] = row
                                 }
                             }
+
+                            
+                         
                             window.population_lookup = population_lookup;
                             for (var feature of geojson.features) {
                                 feature.properties.population = population_lookup[feature.properties.SA22022_V1]
                             }
 
                             var cmap = chroma.scale("Spectral").domain([maxPop, 0]);
-                            window.cmap = cmap
+                            window.cmap = cmap;
                             L.geoJSON(geojson,
                                 {
                                     onEachFeature: function (feature, layer) {
@@ -128,6 +121,7 @@
                                         layer.bindTooltip(`${p.SA22022__1}: ${p.population["2022"]} people in 2002`, {
                                             sticky: true
                                         })
+                                        
                                     },
                                     style: function (feature) {
                                         return {
@@ -136,18 +130,17 @@
                                             color: "black",
                                             weight: 0.1
                                         }
-
-
                                     },
                                 }).addTo(map);
+
+                                // Legend
                                 var legend = L.control({position: 'bottomright'});
                                 legend.onAdd = function(map){
                                     var div = L.DomUtil.create("div","info legend");
                                     div.innerHTML += "<h1>Legend</h1>";
                                     for(var i=0; i< maxPop;i+=maxPop/5){
                                         console.log(i)
-                                        div.innerHTML += `<i style="background:${cmap(i)}"></i>${i}<br>`
-                                        
+                                        div.innerHTML += `<i style="background:${cmap(i)}"></i>${i}<br>`                                        
                                     }
                                     div.innerHTML += '<div class="legend-source">Source: <a href="https://nzdotstat.stats.govt.nz/wbos/Index.aspx?DataSetCode=TABLECODE7979#">Stats NZ</a></div>'
                                     return div;
@@ -155,8 +148,6 @@
                                 legend.addTo(map);
                         }
                     )
-
-
             }
         })
     </script>
