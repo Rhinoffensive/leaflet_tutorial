@@ -90,75 +90,103 @@
         });
         L.tileLayer.provider('OpenStreetMap.Mapnik').addTo(map);
 
-        // Load and process CSV data
-        Papa.parse("https://raw.githubusercontent.com/UoA-eResearch/SA2_2022_population/main/population_by_SA2.csv", {
-            download: true,
-            header: true,
-            dynamicTyping: true,
-            complete: function (results) {
-                // console.log(results)
-                var csvData = results.data;
-                // Get the maximum population
-                var maxPop = Math.max(...csvData.map(row => row["2022"]).filter(row => row));
-                console.log(maxPop);
-                fetch('https://raw.githubusercontent.com/UoA-eResearch/SA2_2022_population/main/SA2_2022.topojson')
-                    .then(results => results.json()).then(
-                        function (SA2_topojson) {
-                            console.log(SA2_topojson)
-                            // Convert topojson to geojson
-                            var geojson = topojson.feature(SA2_topojson, Object.values(SA2_topojson.objects)[0]);
-                            console.log(geojson)
-                            var population_lookup = {};
-                            for (var row of csvData) {
-                                if (row.Area) {
-                                    population_lookup[row.Area.split(" ")[0]] = row
-                                }
-                            }
-                            window.population_lookup = population_lookup;
-                            for (var feature of geojson.features) {
-                                feature.properties.population = population_lookup[feature.properties.SA22022_V1]
-                            }
+        // Read json data from file
+        fetch('DJIFlightRecord_2023-06-19_[17-03-02].json').then(results => results.json()).then(
+            function (data) {
+                console.log(data)
+                var startPos = data.summary.startCoordinate;
+                L.marker([startPos.latitude, startPos.longitude]).addTo(map);
 
-                            var cmap = chroma.scale("Spectral").domain([maxPop, 0]);
-                            window.cmap = cmap
-                            L.geoJSON(geojson,
-                                {
-                                    onEachFeature: function (feature, layer) {
-                                        var p = feature.properties;
-                                        layer.bindTooltip(`${p.SA22022__1}: ${p.population["2022"]} people in 2002`, {
-                                            sticky: true
-                                        })
-                                    },
-                                    style: function (feature) {
-                                        return {
-                                            fillColor: cmap(feature.properties.population["2022"]),
-                                            fillOpacity: .5,
-                                            color: "black",
-                                            weight: 0.1
-                                        }
+                let minLat, maxLat, minLng, maxLng;
 
-
-                                    },
-                                }).addTo(map);
-                                var legend = L.control({position: 'bottomright'});
-                                legend.onAdd = function(map){
-                                    var div = L.DomUtil.create("div","info legend");
-                                    div.innerHTML += "<h1>Legend</h1>";
-                                    for(var i=0; i< maxPop;i+=maxPop/5){
-                                        console.log(i)
-                                        div.innerHTML += `<i style="background:${cmap(i)}"></i>${i}<br>`
-                                        
-                                    }
-                                    div.innerHTML += '<div class="legend-source">Source: <a href="https://nzdotstat.stats.govt.nz/wbos/Index.aspx?DataSetCode=TABLECODE7979#">Stats NZ</a></div>'
-                                    return div;
-                                }
-                                legend.addTo(map);
-                        }
-                    )
-
-
+                var row0 = data["info"]["frameTimeStates"][0];
+                minLat = row0.flightControllerState.aircraftLocation.latitude;
+                maxLat = row0.flightControllerState.aircraftLocation.latitude;
+                minLng = row0.flightControllerState.aircraftLocation.longitude;
+                maxLng = row0.flightControllerState.aircraftLocation.longitude;
+                for (var row of data["info"]["frameTimeStates"]){
+                    minLat = Math.min(row.flightControllerState.aircraftLocation.latitude, minLat);
+                    maxLat = Math.max(row.flightControllerState.aircraftLocation.latitude, maxLat);
+                    minLng = Math.min(row.flightControllerState.aircraftLocation.longitude,minLng);
+                    maxLng = Math.max(row.flightControllerState.aircraftLocation.longitude,maxLng);
+                }
+                map.setView([(minLat+maxLat)/2,(minLng+maxLng)/2], 18);
             }
-        })
+            
+        )
+
+
+
+
+        // Load and process CSV data
+        // Papa.parse("https://raw.githubusercontent.com/UoA-eResearch/SA2_2022_population/main/population_by_SA2.csv", {
+        //     download: true,
+        //     header: true,
+        //     dynamicTyping: true,
+        //     complete: function (results) {
+        //         // console.log(results)
+        //         var csvData = results.data;
+        //         // Get the maximum population
+        //         var maxPop = Math.max(...csvData.map(row => row["2022"]).filter(row => row));
+        //         console.log(maxPop);
+        //         fetch('https://raw.githubusercontent.com/UoA-eResearch/SA2_2022_population/main/SA2_2022.topojson')
+        //             .then(results => results.json()).then(
+        //                 function (SA2_topojson) {
+        //                     console.log(SA2_topojson)
+        //                     // Convert topojson to geojson
+        //                     var geojson = topojson.feature(SA2_topojson, Object.values(SA2_topojson.objects)[0]);
+        //                     console.log(geojson)
+        //                     var population_lookup = {};
+        //                     for (var row of csvData) {
+        //                         if (row.Area) {
+        //                             population_lookup[row.Area.split(" ")[0]] = row
+        //                         }
+        //                     }
+        //                     window.population_lookup = population_lookup;
+        //                     for (var feature of geojson.features) {
+        //                         feature.properties.population = population_lookup[feature.properties.SA22022_V1]
+        //                     }
+
+        //                     var cmap = chroma.scale("Spectral").domain([maxPop, 0]);
+        //                     window.cmap = cmap
+        //                     L.geoJSON(geojson,
+        //                         {
+        //                             onEachFeature: function (feature, layer) {
+        //                                 var p = feature.properties;
+        //                                 layer.bindTooltip(`${p.SA22022__1}: ${p.population["2022"]} people in 2002`, {
+        //                                     sticky: true
+        //                                 })
+        //                             },
+        //                             style: function (feature) {
+        //                                 return {
+        //                                     fillColor: cmap(feature.properties.population["2022"]),
+        //                                     fillOpacity: .5,
+        //                                     color: "black",
+        //                                     weight: 0.1
+        //                                 }
+
+
+        //                             },
+        //                         }).addTo(map);
+        //                         var legend = L.control({position: 'bottomright'});
+        //                         legend.onAdd = function(map){
+        //                             var div = L.DomUtil.create("div","info legend");
+        //                             div.innerHTML += "<h1>Legend</h1>";
+        //                             for(var i=0; i< maxPop;i+=maxPop/5){
+        //                                 console.log(i)
+        //                                 div.innerHTML += `<i style="background:${cmap(i)}"></i>${i}<br>`
+                                        
+        //                             }
+        //                             div.innerHTML += '<div class="legend-source">Source: <a href="https://nzdotstat.stats.govt.nz/wbos/Index.aspx?DataSetCode=TABLECODE7979#">Stats NZ</a></div>'
+        //                             return div;
+        //                         }
+        //                         legend.addTo(map);
+        //                 }
+        //             )
+
+
+        //     }
+        // })
     </script>
 </body>
 
